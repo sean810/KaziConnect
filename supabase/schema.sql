@@ -212,8 +212,8 @@ alter table public.career_resources enable row level security;
 alter table public.audit_events enable row level security;
 
 create policy "Public reads own profile" on public.profiles for select using (id=auth.uid() or public.is_admin());
-create policy "Employer reads applicants" on public.profiles for select using (exists(select 1 from public.applications a join public.opportunities j on j.id=a.opportunity_id join public.organizations o on o.id=j.organization_id where a.seeker_id=id and o.owner_id=auth.uid()));
-create policy "Provider reads registrants" on public.profiles for select using (exists(select 1 from public.training_registrations r join public.opportunities j on j.id=r.opportunity_id join public.organizations o on o.id=j.organization_id where r.seeker_id=id and o.owner_id=auth.uid()));
+create policy "Employer reads applicants" on public.profiles for select using (exists(select 1 from public.applications a join public.opportunities j on j.id=a.opportunity_id join public.organizations o on o.id=j.organization_id where a.seeker_id=profiles.id and o.owner_id=auth.uid()));
+create policy "Provider reads registrants" on public.profiles for select using (exists(select 1 from public.training_registrations r join public.opportunities j on j.id=r.opportunity_id join public.organizations o on o.id=j.organization_id where r.seeker_id=profiles.id and o.owner_id=auth.uid()));
 create policy "User updates own profile" on public.profiles for update using (id=auth.uid() and role <> 'admin' and account_status='active') with check (id=auth.uid() and role <> 'admin' and account_status='active');
 create policy "Admin manages profiles" on public.profiles for all using (public.is_admin()) with check (public.is_admin());
 create policy "Public reads published opportunities" on public.opportunities for select using (status='published' or public.is_admin() or exists(select 1 from public.organizations o where o.id=organization_id and o.owner_id=auth.uid()));
@@ -225,7 +225,7 @@ create policy "Owners update organization" on public.organizations for update us
 create policy "Owner and admin view verification evidence" on public.verification_documents for select using (public.is_admin() or exists(select 1 from public.organizations o where o.id=organization_id and o.owner_id=auth.uid()));
 create policy "Organization owner adds verification evidence" on public.verification_documents for insert with check (uploaded_by=auth.uid() and exists(select 1 from public.organizations o where o.id=organization_id and o.owner_id=auth.uid()));
 create policy "Owner and admin delete verification evidence" on public.verification_documents for delete using (public.is_admin() or exists(select 1 from public.organizations o where o.id=organization_id and o.owner_id=auth.uid()));
-create policy "Owner reads private documents" on public.documents for select using (owner_id=auth.uid() or public.is_admin() or exists(select 1 from public.applications a where a.document_id=id and exists(select 1 from public.opportunities j join public.organizations o on o.id=j.organization_id where j.id=a.opportunity_id and o.owner_id=auth.uid())));
+create policy "Owner reads private documents" on public.documents for select using (owner_id=auth.uid() or public.is_admin() or exists(select 1 from public.applications a where a.document_id=documents.id and exists(select 1 from public.opportunities j join public.organizations o on o.id=j.organization_id where j.id=a.opportunity_id and o.owner_id=auth.uid())));
 create policy "Owner inserts documents" on public.documents for insert with check (owner_id=auth.uid());
 create policy "Owner deletes documents" on public.documents for delete using (owner_id=auth.uid() or public.is_admin());
 create policy "Owner updates documents" on public.documents for update using (owner_id=auth.uid() or public.is_admin()) with check (owner_id=auth.uid() or public.is_admin());
