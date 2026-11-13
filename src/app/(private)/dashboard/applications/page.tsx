@@ -1,0 +1,23 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { downloadApplicantCVAction, updateApplicationAction, withdrawApplicationAction } from "@/app/actions";
+
+export default async function Applications({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
+  const p = await searchParams;
+  const db = await createClient();
+  if (!db) redirect("/login");
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) redirect("/login");
+  const { data: profile } = await db.from("profiles").select("role,full_name").eq("id", user.id).single();
+  if (profile?.role === "seeker") {
+    const { data } = await db.from("applications").select("id,status,created_at,document_id,opportunities(title,organization_name,county)").eq("seeker_id", user.id).order("created_at", { ascending: false });
+    return <main className="wrap" style={{ paddingTop: 55, paddingBottom: 80 }}><div className="eyebrow"><span className="eyebrow-line"/> APPLICATION TRACKER</div><h1 style={{ fontSize: 36, letterSpacing: "-.05em" }}>Your applications.</h1><p style={{ fontSize: 12, color: "#7b857d" }}>Track applications submitted through KaziConnect. External applications are completed on the employer site and are not tracked here.</p><section className="content-panel" style={{ marginTop: 22 }}>{p.error && <div className="notice error-notice">{decodeURIComponent(p.error)}</div>}{p.message && <div className="notice success-notice">{decodeURIComponent(p.message)}</div>}{data?.length ? data.map((x: any) => <article className="listing-row" key={x.id}><div className="listing-row-main"><h3>{x.opportunities?.title}</h3><p>{x.opportunities?.organization_name} · {x.opportunities?.county}</p></div><span className="status">{x.status.replaceAll("_", " ")}</span><span className="source-label">{new Date(x.created_at).toLocaleDateString("en-KE")}</span>{!["accepted","rejected","withdrawn"].includes(x.status) && <form action={withdrawApplicationAction}><input type="hidden" name="id" value={x.id}/><button className="button" style={{ background: "#f2f3ef", height: 32 }}>Withdraw</button></form>}</article>) : <div className="empty-state">No internal applications yet. <Link href="/jobs" className="text-link">Explore jobs ↗</Link></div>}</section></main>;
+  }
+  if (!profile || !["employer", "admin"].includes(profile.role)) redirect("/dashboard");
+  const orgs = (await db.from("organizations").select("id").eq("owner_id", user.id)).data ?? [];
+  const { data: jobs } = profile.role === "admin" ? await db.from("opportunities").select("id").in("kind", ["job", "internship"]) : orgs.length ? await db.from("opportunities").select("id").in("organization_id", orgs.map((o: any) => o.id)).in("kind", ["job", "internship"]) : { data: [] };
+  const ids = (jobs ?? []).map((j: any) => j.id);
+  const { data } = ids.length ? await db.from("applications").select("id,status,created_at,document_id,opportunities(title),profiles(full_name)").in("opportunity_id", ids).order("created_at", { ascending: false }) : { data: [] };
+  return <main className="wrap" style={{ paddingTop: 55, paddingBottom: 80 }}><div className="eyebrow"><span className="eyebrow-line"/> CANDIDATE PIPELINE</div><h1 style={{ fontSize: 36, letterSpacing: "-.05em" }}>Applicants.</h1><p style={{ fontSize: 12, color: "#7b857d" }}>Review applications and update candidates as they progress.</p><section className="content-panel" style={{ marginTop: 22 }}>{p.error && <div className="notice error-notice">{decodeURIComponent(p.error)}</div>}{data?.length ? data.map((x: any) => <article className="listing-row" key={x.id}><div className="listing-row-main"><h3>{x.profiles?.full_name || "Candidate"}</h3><p>{x.opportunities?.title} · {new Date(x.created_at).toLocaleDateString("en-KE")}</p></div><form action={downloadApplicantCVAction}><input type="hidden" name="document_id" value={x.document_id}/><button className="button" style={{ background: "#edf3e8", color: "#145c45", height: 32 }}>Open CV ↗</button></form><form action={updateApplicationAction} style={{ display: "flex", gap: 5 }}><input type="hidden" name="id" value={x.id}/><select name="status" defaultValue={x.status}><option value="under_review">Under review</option><option value="shortlisted">Shortlisted</option><option value="interview">Interview</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option></select><button className="button button-dark" style={{ height: 32, padding: "0 9px" }}>Update</button></form></article>) : <div className="empty-state">No applications have arrived yet.</div>}</section></main>;
+}
