@@ -20,7 +20,7 @@ export function CareerjetResults({
       {results.state === "not-configured" ? (
         <div className="notice">Live Careerjet listings are not connected yet. Add a Careerjet publisher API key to enable this feed. KaziConnect published listings remain available above.</div>
       ) : results.state === "unavailable" ? (
-        <div className="notice">Careerjet’s live search is temporarily unavailable. KaziConnect published listings remain available above.</div>
+        <div className="notice">Careerjet’s live search is temporarily unavailable. KaziConnect published listings remain available above.{results.diagnostic && <small className="careerjet-diagnostic">Connection check: {results.diagnostic}.</small>}</div>
       ) : results.items.length ? (
         <>
           <p className="careerjet-attribution">Listings supplied by Careerjet. These third-party posts are not verified by KaziConnect; check availability and requirements on the source page. Careerjet receives your IP address and browser type with this search to provide its results.</p>

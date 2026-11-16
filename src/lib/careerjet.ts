@@ -16,6 +16,7 @@ export type CareerjetSearch = {
   hits: number;
   pages: number;
   page: number;
+  diagnostic?: string;
 };
 
 type CareerjetResponse = {
@@ -68,14 +69,14 @@ export async function searchCareerjet({
 }): Promise<CareerjetSearch> {
   const requestedPage = Number(page);
   const safePage = Math.max(1, Math.min(10, Number.isFinite(requestedPage) ? Math.floor(requestedPage) : 1));
-  const apiKey = process.env.CAREERJET_API_KEY;
+  const apiKey = process.env.CAREERJET_API_KEY?.trim();
   if (!apiKey) return { state: "not-configured", items: [], hits: 0, pages: 0, page: safePage };
 
   const ip = visitorIp(headers);
   const userAgent = headers.get("user-agent") ?? "";
   if (!ip || !userAgent) {
     console.warn("[careerjet] Search skipped because visitor IP or user-agent was unavailable.");
-    return { state: "unavailable", items: [], hits: 0, pages: 0, page: safePage };
+    return { state: "unavailable", items: [], hits: 0, pages: 0, page: safePage, diagnostic: "required visitor metadata missing" };
   }
 
   const query = new URLSearchParams({
@@ -107,7 +108,7 @@ export async function searchCareerjet({
     });
     if (!response.ok) {
       console.warn(`[careerjet] Publisher API returned HTTP ${response.status}.`);
-      return { state: "unavailable", items: [], hits: 0, pages: 0, page: safePage };
+      return { state: "unavailable", items: [], hits: 0, pages: 0, page: safePage, diagnostic: `provider HTTP ${response.status}` };
     }
     const data = (await response.json()) as CareerjetResponse;
     const items = (Array.isArray(data.jobs) ? data.jobs : []).filter((job) =>
@@ -123,6 +124,6 @@ export async function searchCareerjet({
     };
   } catch {
     console.warn("[careerjet] Publisher API request failed or timed out.");
-    return { state: "unavailable", items: [], hits: 0, pages: 0, page: safePage };
+    return { state: "unavailable", items: [], hits: 0, pages: 0, page: safePage, diagnostic: "provider request timed out or could not connect" };
   }
 }
