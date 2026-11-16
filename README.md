@@ -50,6 +50,10 @@ Vercel Hobby is a zero-cost option for the non-commercial school presentation, w
 
 ## Demonstration content
 
+### Live Careerjet search
+
+The Jobs and Internships pages can also show live Kenyan results through Careerjet’s publisher API. Register for a Careerjet Publisher account and obtain a website-specific API key, then set `CAREERJET_API_KEY` locally and in Vercel Project Settings. Keep it server-only; the API request is made from the server using Careerjet’s required visitor IP and user-agent fields. Careerjet results are clearly attributed, link to the provider’s application page, and remain separate from KaziConnect’s verified listings. The API has provider-specific terms and request limits; review those with Careerjet before wider launch. Without the key, KaziConnect’s own published listings continue to work and the live-search area explains that the source is not connected.
+
 The base seed records are real third-party opportunities checked on 12 November 2026 and link to their listing pages on Job Connect Kenya. Listings are external and not automatically KaziConnect-verified. Refresh their status and source before a presentation or application. Career guidance articles are original KaziConnect editorial content stored in PostgreSQL. Future records should use real listings with a current source URL and must not be marked as fictional or KaziConnect verified unless they meet the relevant criteria.
 
 The upgrade adds an admin source registry and CSV intake for up to 500 listings per import. Imported rows are deduplicated by source URL, marked as externally sourced and queued for moderation. Only import records you are authorized to distribute; the tool does not scrape websites or create job data. Add current listings through an authorized employer feed, partner, or manual source process to grow the inventory. A public JSON feed at `/api/opportunities/feed` lets other authorized channels consume published KaziConnect listings. A daily Vercel cron closes listings past their closing/source-expiry date and sends due follow-up reminders; configure the two server secrets above.
