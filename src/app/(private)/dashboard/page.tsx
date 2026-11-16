@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bell, BriefcaseBusiness, Building2, FileText, GraduationCap, LayoutDashboard, ListChecks, ShieldCheck, Users } from "lucide-react";
+import { Bell, BriefcaseBusiness, Building2, FileText, GraduationCap, LayoutDashboard, ListChecks, ShieldCheck, Users, Sparkles, BookOpen, Settings2, UserRoundSearch, Radio } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/app/actions";
 
 const navFor = (role: string) => role === "admin"
-  ? [["Overview","/dashboard",LayoutDashboard], ["Organizations","/dashboard/organizations",Building2], ["Listings & moderation","/dashboard/manage",ShieldCheck], ["Users","/dashboard/users",Users], ["Reports","/dashboard/reports",ListChecks], ["Content","/dashboard/content",FileText], ["Notifications","/dashboard/notifications",Bell]]
+  ? [["Overview","/dashboard",LayoutDashboard], ["Sources & data","/dashboard/sources",Radio], ["Organizations","/dashboard/organizations",Building2], ["Listings & moderation","/dashboard/manage",ShieldCheck], ["Users","/dashboard/users",Users], ["Reports","/dashboard/reports",ListChecks], ["Content","/dashboard/content",FileText], ["Notifications","/dashboard/notifications",Bell]]
   : role === "employer"
-  ? [["Overview","/dashboard",LayoutDashboard], ["My listings","/dashboard/manage",BriefcaseBusiness], ["Applicants","/dashboard/applications",Users], ["Organization","/dashboard/organization",Building2], ["Notifications","/dashboard/notifications",Bell]]
+  ? [["Overview","/dashboard",LayoutDashboard], ["My listings","/dashboard/manage",BriefcaseBusiness], ["Applicants","/dashboard/applications",Users], ["Find candidates","/dashboard/candidates",UserRoundSearch], ["Team","/dashboard/team",Users], ["Organization","/dashboard/organization",Building2], ["Notifications","/dashboard/notifications",Bell]]
   : role === "provider"
-  ? [["Overview","/dashboard",LayoutDashboard], ["Training listings","/dashboard/manage",GraduationCap], ["Registrations","/dashboard/training",Users], ["Provider profile","/dashboard/organization",Building2], ["Notifications","/dashboard/notifications",Bell]]
-  : [["Overview","/dashboard",LayoutDashboard], ["My profile","/dashboard/profile",Users], ["My applications","/dashboard/applications",ListChecks], ["Training registrations","/dashboard/training",GraduationCap], ["Saved opportunities","/dashboard/saved",BriefcaseBusiness], ["CVs & documents","/dashboard/cvs",FileText], ["Notifications","/dashboard/notifications",Bell]];
+  ? [["Overview","/dashboard",LayoutDashboard], ["Training listings","/dashboard/manage",GraduationCap], ["Registrations","/dashboard/training",Users], ["Team","/dashboard/team",Users], ["Provider profile","/dashboard/organization",Building2], ["Notifications","/dashboard/notifications",Bell]]
+  : [["Overview","/dashboard",LayoutDashboard], ["My matches","/dashboard/matches",Sparkles], ["Preferences & alerts","/dashboard/preferences",Settings2], ["My profile","/dashboard/profile",Users], ["Applications","/dashboard/applications",ListChecks], ["Learning path","/dashboard/learning",BookOpen], ["Saved opportunities","/dashboard/saved",BriefcaseBusiness], ["CV builder","/dashboard/cv-builder",FileText], ["Uploaded CVs","/dashboard/cvs",FileText], ["Notifications","/dashboard/notifications",Bell]];
 
 export default async function Dashboard() {
   const db = await createClient();
@@ -30,8 +30,8 @@ export default async function Dashboard() {
     const saved = await db.from("saved_opportunities").select("opportunity_id", { count: "exact", head: true }).eq("user_id", user.id);
     stats = { apps: items.length, training: training.count ?? 0, saved: saved.count ?? 0 };
   } else if (profile.role === "employer" || profile.role === "provider") {
-    const { data: orgs } = await db.from("organizations").select("id,name,verification_status").eq("owner_id", user.id);
-    stats.orgs = orgs ?? [];
+    const [{data:owned},{data:team}] = await Promise.all([db.from("organizations").select("id,name,verification_status").eq("owner_id", user.id),db.from("organization_members").select("organization_id,organizations(id,name,verification_status)").eq("user_id",user.id)]);
+    const orgs=[...(owned??[]),...(team??[]).map((m:any)=>Array.isArray(m.organizations)?m.organizations[0]:m.organizations).filter(Boolean)];stats.orgs=orgs;
     const ids = (orgs ?? []).map((o: any) => o.id);
     const result = ids.length ? await db.from("opportunities").select("id,title,status,kind,created_at").in("organization_id", ids).order("created_at", { ascending: false }) : { data: [] };
     items = result.data ?? [];
@@ -47,10 +47,11 @@ export default async function Dashboard() {
   }
   return <>
     <header className="nav wrap"><Link className="brand" href="/"><span className="brand-mark">k.</span><span>kazi<span className="brand-light">connect</span></span></Link><span className="topbar-user">{name}<form action={signOutAction}><button>Log out</button></form></span></header>
-    <main className="wrap dashboard-layout"><nav className="dash-nav">{links.map(([label, href, Icon]: any) => <Link key={href} href={href}><Icon size={15}/>{label}</Link>)}</nav>
+    <main className={`wrap dashboard-layout ${profile.role}-dashboard`}><nav className="dash-nav">{links.map(([label, href, Icon]: any) => <Link key={href} href={href}><Icon size={15}/>{label}</Link>)}</nav>
       <section className="dashboard-content"><div className="eyebrow"><span className="eyebrow-line"/> YOUR KAZICONNECT</div><h1>Hello, {name.split(" ")[0]}.</h1><p>{profile.role === "seeker" ? "Your next opportunity is a few good steps away." : profile.role === "admin" ? "Keep the opportunity marketplace safe and useful." : "Here’s what’s happening with your organization."}</p>
         <div className="dashboard-cards">{profile.role === "seeker" ? <><div className="dashboard-card"><span>Applications</span><strong>{stats.apps}</strong><small>recently submitted</small></div><div className="dashboard-card"><span>Training</span><strong>{stats.training}</strong><small>registrations of interest</small></div><div className="dashboard-card"><span>Saved</span><strong>{stats.saved}</strong><small>opportunities</small></div></> : profile.role === "admin" ? <><div className="dashboard-card"><span>Organizations to review</span><strong>{stats.orgs}</strong><small>verification queue</small></div><div className="dashboard-card"><span>Listings to review</span><strong>{stats.pending}</strong><small>moderation queue</small></div><div className="dashboard-card"><span>Open reports</span><strong>{stats.reports}</strong><small>user-submitted</small></div></> : <><div className="dashboard-card"><span>Live listings</span><strong>{stats.live}</strong><small>visible to job seekers</small></div><div className="dashboard-card"><span>Awaiting review</span><strong>{stats.pending}</strong><small>submitted for moderation</small></div><div className="dashboard-card"><span>Organization</span><strong>{stats.orgs?.[0]?.verification_status ?? "—"}</strong><small>{stats.orgs?.[0]?.name ?? "Set up your profile"}</small></div></>}</div>
         <div className="content-panel"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><h3>{profile.role === "seeker" ? "Recent applications" : profile.role === "admin" ? "Recent listings" : "Your latest listings"}</h3>{profile.role === "seeker" && <Link href="/jobs" className="text-link">Find opportunities ↗</Link>}{(profile.role === "employer" || profile.role === "provider") && <Link href="/dashboard/manage" className="text-link">Manage ↗</Link>}</div>{items.length ? items.map((x: any) => <div className="listing-row" key={x.id}><div className="listing-row-main"><h3>{x.opportunities?.title ?? x.title}</h3><p>{x.opportunities?.organization_name ?? x.kind}</p></div><span className="status">{x.status?.replace("_", " ")}</span><span className="source-label">{new Date(x.created_at).toLocaleDateString("en-KE")}</span></div>) : <div className="empty-state">No records yet. Explore an opportunity or publish a listing to get started.</div>}</div>
+        {(profile.role === "employer" || profile.role === "provider") && <div className="distribution-panel"><div><span className="eyebrow"><span className="eyebrow-line"/> JOB DISTRIBUTION</span><h3>Published opportunities can travel further.</h3><p>Share KaziConnect’s live JSON feed with authorized partners and job distribution channels.</p></div><Link className="button button-outline" href="/api/opportunities/feed" target="_blank">Open partner feed ↗</Link></div>}
       </section></main>
   </>;
 }

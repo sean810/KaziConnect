@@ -1,0 +1,12 @@
+"use client";
+import Link from "next/link";
+import {useState} from "react";
+import {Eye,EyeOff} from "lucide-react";
+import {signInAction,googleSignInAction} from "@/app/actions";
+
+export function LoginForm({error,message,next}:{error?:string;message?:string;next?:string}){
+ const [visible,setVisible]=useState(false);
+ const messages:Record<string,string>={configuration:"Connect Supabase first using the project setup guide.","invalid-credentials":"The email or password is incorrect. Check both and try again.","google-unavailable":"Google sign-in is not configured yet. Use email and password for now.",confirmation:"We could not confirm that sign-in link. Request a new confirmation email and check the Supabase redirect URL settings.","account-suspended":"This account is currently suspended. Contact KaziConnect support.","password-reset":"If an account uses that email, a password reset link has been sent."};
+ const notices:Record<string,string>={"welcome-back":"You’re signed in.","account-created":"Your account is ready."};
+ return <form className="form-card" action={signInAction}><input type="hidden" name="next" value={next??""}/><div className="eyebrow"><span className="eyebrow-line"/> WELCOME BACK</div><h1>Log in to KaziConnect</h1><p>Pick up where your next chapter begins.</p>{error&&<div className="notice error-notice" role="alert">{messages[error]??decodeURIComponent(error)}</div>}{message&&<div className="notice success-notice" role="status">{notices[message]??decodeURIComponent(message)}</div>}<label>Email address<input name="email" type="email" autoComplete="email" required/></label><label>Password<div className="password-control"><input name="password" type={visible?"text":"password"} autoComplete="current-password" required minLength={8}/><button type="button" className="password-toggle" aria-label={visible?"Hide password":"Show password"} onClick={()=>setVisible(!visible)}>{visible?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></label><button className="button button-dark" type="submit">Log in ↗</button><div className="auth-divider"><span>or</span></div><button className="button button-outline" type="submit" formAction={googleSignInAction}>Continue with Google</button><div className="form-switch">New to KaziConnect? <Link href="/register">Create an account</Link></div><div className="form-switch"><Link href="/">← Back to home</Link></div></form>
+}
