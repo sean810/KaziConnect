@@ -1,1 +1,21 @@
-export default function Privacy(){return <main className="wrap"><section className="page-header"><div className="eyebrow"><span className="eyebrow-line"/> YOUR INFORMATION</div><h1>Privacy at KaziConnect.</h1><p>This school project is designed to minimize access to personal information.</p></section><section className="content-panel" style={{maxWidth:850,marginBottom:90,lineHeight:1.8,color:"#5f6b62",fontSize:12}}><h3>Data we use</h3><p>Account details support sign-in and profile features. CV files are stored privately, and users choose which CV to attach to an internal application. Application details are visible to the applicant and the organization associated with the opportunity.</p><p>When live Careerjet search is enabled, KaziConnect sends the visitor’s IP address and browser user-agent to Careerjet with the search request, as required by its API. Careerjet returns third-party listing details and application links. Those searches are not KaziConnect-verified listings. See <a href="https://www.careerjet.co.ke/privacy-policy" target="_blank" rel="noreferrer">Careerjet’s privacy information</a>.</p><h3>Your documents</h3><p>CV files are not public. The application uses a private storage bucket and scoped access rules. Do not upload sensitive information you do not wish to share with a prospective employer.</p><h3>Before public launch</h3><p>The project team should publish a complete privacy notice, retention schedule, contact route, and data-subject request process, and confirm the applicable Kenyan data protection requirements with a qualified local adviser.</p></section></main>}
+export default function Privacy() {
+  return (
+    <main className="wrap">
+      <section className="page-header">
+        <div className="eyebrow"><span className="eyebrow-line" /> YOUR INFORMATION</div>
+        <h1>Privacy at KaziConnect.</h1>
+        <p>This school project is designed to minimize access to personal information.</p>
+      </section>
+      <section className="content-panel" style={{ maxWidth: 850, marginBottom: 90, lineHeight: 1.8, color: "#5f6b62", fontSize: 12 }}>
+        <h3>Data we use</h3>
+        <p>Account details support sign-in and profile features. CV files are stored privately, and users choose which CV to attach to an internal application. Application details are visible to the applicant and the organization associated with the opportunity.</p>
+        <p>When live JSearch results are requested, KaziConnect sends the search keywords and selected location to RapidAPI from the server to retrieve third-party listings. KaziConnect does not send the visitor’s IP address or browser user-agent as JSearch search parameters. RapidAPI and its API provider may process request data under their own policies. Read <a href="https://rapidapi.com/page/privacy/" target="_blank" rel="noreferrer">RapidAPI’s privacy notice</a>.</p>
+        <p>Live third-party listings link to their original application pages. They are not verified by KaziConnect; check the source for current availability, deadlines, and requirements before applying.</p>
+        <h3>Your documents</h3>
+        <p>CV files are not public. The application uses a private storage bucket and scoped access rules. Do not upload sensitive information you do not wish to share with a prospective employer.</p>
+        <h3>Before public launch</h3>
+        <p>The project team should publish a complete privacy notice, retention schedule, contact route, and data-subject request process, and confirm the applicable Kenyan data protection requirements with a qualified local adviser.</p>
+      </section>
+    </main>
+  );
+}
