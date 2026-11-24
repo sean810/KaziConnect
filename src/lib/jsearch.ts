@@ -27,6 +27,12 @@ type JSearchResponse = {
   message?: string;
 };
 
+type JSearchErrorResponse = {
+  message?: unknown;
+  error?: { message?: unknown; code?: unknown } | unknown;
+  request_id?: unknown;
+};
+
 export type JSearchListing = {
   title: string;
   company: string;
@@ -107,6 +113,37 @@ function safeListing(job: JSearchJob): JSearchListing | null {
   };
 }
 
+function safeProviderError(status: number, body: unknown, apiKey: string) {
+  if (!body || typeof body !== "object") {
+    return `[jsearch] Provider returned HTTP ${status} with a non-JSON error response.`;
+  }
+
+  const payload = body as JSearchErrorResponse;
+  const nestedError = payload.error && typeof payload.error === "object"
+    ? payload.error as { message?: unknown; code?: unknown }
+    : undefined;
+  const rawMessage = nestedError?.message ?? payload.message;
+  const message = typeof rawMessage === "string"
+    ? rawMessage
+        .replaceAll(apiKey, "[redacted]")
+        .replace(/[\u0000-\u001f\u007f]/g, " ")
+        .replace(/\s+/g, " ")
+        .slice(0, 240)
+    : undefined;
+  const code = nestedError?.code;
+  const requestId = typeof payload.request_id === "string"
+    ? payload.request_id.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 80)
+    : undefined;
+  const details = [
+    `HTTP ${status}`,
+    typeof code === "string" || typeof code === "number" ? `provider code ${String(code).slice(0, 40)}` : undefined,
+    message ? `message: ${message}` : undefined,
+    requestId ? `request_id: ${requestId}` : undefined,
+  ].filter(Boolean).join("; ");
+
+  return `[jsearch] Provider error: ${details || `HTTP ${status}; response had no recognized error fields.`}`;
+}
+
 export async function searchJSearch({
   keywords,
   location,
@@ -143,7 +180,13 @@ export async function searchJSearch({
       signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) {
-      console.warn(`[jsearch] Provider returned HTTP ${response.status}.`);
+      let errorBody: unknown;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = undefined;
+      }
+      console.warn(safeProviderError(response.status, errorBody, apiKey));
       return { state: "unavailable", items: [], diagnostic: `provider HTTP ${response.status}` };
     }
     const data = (await response.json()) as JSearchResponse;
