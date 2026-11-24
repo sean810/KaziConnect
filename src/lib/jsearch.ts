@@ -171,7 +171,7 @@ export async function searchJSearch({
   if (workMode === "remote") query.set("work_from_home", "true");
 
   try {
-    const response = await fetch(`https://jsearch.p.rapidapi.com/search?${query.toString()}`, {
+    const response = await fetch(`https://jsearch.p.rapidapi.com/search-v2?${query.toString()}`, {
       headers: {
         "X-RapidAPI-Key": apiKey,
         "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
